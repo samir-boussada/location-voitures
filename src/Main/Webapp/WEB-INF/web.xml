@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ============================================================
+     WEB.XML — Deployment configuration
+     Sets index.xhtml as the context home page.
+     The FacesServlet is registered automatically by JoinFaces.
+     ============================================================ -->
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+         https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>Location de voitures</display-name>
+
+    <!-- Native PrimeFaces upload (Servlet Part, no Commons upload library) -->
+    <context-param>
+        <param-name>primefaces.UPLOADER</param-name>
+        <param-value>native</param-value>
+    </context-param>
+
+    <!-- Context home page -->
+    <welcome-file-list>
+        <welcome-file>index.xhtml</welcome-file>
+    </welcome-file-list>
+
+    <!-- Session duration: 2 hours (avoids unexpected logouts) -->
+    <session-config>
+        <session-timeout>120</session-timeout>
+    </session-config>
+
+</web-app>

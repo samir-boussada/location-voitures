@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Connexion — Location de voitures</title>
+    <style>
+        /* ==================================================================
+           PAGE DE CONNEXION — Location de voitures
+           Panneau gauche : photo BMW Série 3 Touring
+           Panneau droit : connexion (e-mail/mot de passe),
+           boutons Google / Apple et inscription
+           ================================================================== */
+        :root {
+            --bleu: #2563eb;
+            --bleu-fonce: #1d4ed8;
+            --indigo: #4f46e5;
+            --encre: #1f2937;
+            --gris: #6b7280;
+            --gris-clair: #f3f4f6;
+            --bordure: #e5e7eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+            background: #eef2ff;
+            color: var(--encre);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .ecran-connexion {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ---------------- Panneau gauche : photo + marque ---------------- */
+        .panneau-marque {
+            flex: 1 1 52%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 560px;
+            background: linear-gradient(160deg, #1e3a8a 0%, #1d4ed8 60%, #000 160%);
+        }
+
+        .photo-bmw {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .voile {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%,
+                        rgba(30, 58, 138, 0.25) 45%,
+                        rgba(2, 6, 23, 0.92) 100%);
+        }
+
+        .legende-photo {
+            position: absolute;
+            top: 22px;
+            left: 28px;
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            z-index: 2;
+        }
+
+        .bloc-marque {
+            position: relative;
+            z-index: 1;
+            color: #fff;
+            padding: 44px 56px 52px;
+            max-width: 560px;
+        }
+
+        .logo-badge {
+            width: 58px; height: 58px;
+            background: #fff;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            margin-bottom: 24px;
+        }
+        .logo-badge svg { width: 30px; height: 30px; stroke: #2563eb; }
+
+        .bloc-marque h1 {
+            font-size: 38px;
+            font-weight: 700;
+            line-height: 1.12;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        .bloc-marque .slogan {
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.94;
+            margin-bottom: 26px;
+            max-width: 420px;
+        }
+
+        .points-forts {
+            list-style: none;
+        }
+        .points-forts li {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 8px 0;
+            font-size: 14.5px;
+            opacity: 0.96;
+        }
+        .points-forts .puce {
+            width: 28px; height: 28px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .points-forts svg { width: 16px; height: 16px; stroke: #fff; }
+
+        /* ---------------- Panneau droit (formulaire) ---------------- */
+        .panneau-formulaire {
+            flex: 1 1 48%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+
+        .carte-connexion {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border: 1px solid var(--bordure);
+            border-radius: 22px;
+            box-shadow: 0 24px 60px rgba(30, 58, 138, 0.14);
+            padding: 38px 36px;
+        }
+
+        .carte-connexion h2 {
+            font-size: 25px;
+            margin-bottom: 6px;
+        }
+
+        .carte-connexion .sous-titre {
+            color: var(--gris);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        /* Alertes error / logout / inscrit */
+        .alerte {
+            display: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        .alerte.erreur {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .alerte.info {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* Boutons sociaux */
+        .bouton-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            height: 46px;
+            border-radius: 12px;
+            font-size: 14.5px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        }
+        .bouton-social:active { transform: translateY(1px); }
+        .bouton-social svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        .bouton-google {
+            background: #fff;
+            border: 1.5px solid var(--bordure);
+            color: #374151;
+        }
+        .bouton-google:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .bouton-apple {
+            background: #111827;
+            border: 1.5px solid #111827;
+            color: #fff;
+        }
+        .bouton-apple:hover { background: #1f2937; }
+
+        .separateur {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #9ca3af;
+            font-size: 13px;
+            margin: 18px 0;
+        }
+        .separateur::before,
+        .separateur::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--bordure);
+        }
+
+        .champ {
+            margin-bottom: 16px;
+        }
+        .champ label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 7px;
+        }
+
+        .corps-champ {
+            position: relative;
+        }
+        .corps-champ svg.icone-champ {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px; height: 18px;
+            stroke: #9ca3af;
+            pointer-events: none;
+        }
+        .corps-champ input {
+            width: 100%;
+            height: 46px;
+            padding: 0 44px;
+            border: 1.5px solid var(--bordure);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--encre);
+            background: #fff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            outline: none;
+        }
+        .corps-champ input::placeholder { color: #9ca3af; }
+        .corps-champ input:focus {
+            border-color: var(--bleu);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .oeil {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px; height: 36px;
+            border: none;
+            background: transparent;
+            border-radius: 9px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .oeil svg { width: 20px; height: 20px; stroke: #9ca3af; }
+        .oeil:hover svg { stroke: var(--bleu); }
+
+        .bouton-connexion {
+            width: 100%;
+            height: 48px;
+            margin-top: 6px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--bleu) 0%, var(--indigo) 100%);
+            color: #fff;
+            font-size: 15.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.32);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .bouton-connexion:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4);
+        }
+        .bouton-connexion:active { transform: translateY(0); }
+        .bouton-connexion svg { width: 18px; height: 18px; stroke: #fff; }
+
+        .pied-carte {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 13.5px;
+            color: var(--gris);
+        }
+        .pied-carte a {
+            color: var(--bleu);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .pied-carte a:hover { text-decoration: underline; }
+
+        .copyright {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* ---------------- Responsive ---------------- */
+        @media (max-width: 860px) {
+            .ecran-connexion { flex-direction: column; }
+            .panneau-marque { min-height: 380px; }
+            .bloc-marque { padding: 30px 26px 34px; }
+            .bloc-marque h1 { font-size: 28px; }
+            .points-forts { display: none; }
+            .panneau-formulaire { padding: 26px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ecran-connexion">
+
+        <!-- ===== Left panel: BMW 3 Series Touring photo ===== -->
+        <div class="panneau-marque">
+            <span class="legende-photo">BMW Série 3 Touring</span>
+            <img src="images/bmw-3-touring.jpg" alt="BMW Série 3 Touring" class="photo-bmw"/>
+            <div class="voile"></div>
+
+            <div class="bloc-marque">
+                <div class="logo-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 11l1.5-4.5A2 2 0 0 1 8.38 5h7.24a2 2 0 0 1 1.88 1.5L19 11"/>
+                        <path d="M4 11h16a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1.5"/>
+                        <circle cx="6.5" cy="17.5" r="1.8"/>
+                        <circle cx="17.5" cy="17.5" r="1.8"/>
+                        <path d="M8.5 17.5h7"/>
+                    </svg>
+                </div>
+
+                <h1>Location de<br/>voitures</h1>
+                <p class="slogan">
+                    Gérez votre flotte, vos clients et vos locations
+                    depuis un tableau de bord simple et moderne.
+                </p>
+
+                <ul class="points-forts">
+                    <li>
+                        <span class="puce">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2l1.9 5.6L20 9l-5.2 3.7L16.6 19 12 15.6 7.4 19l1.8-6.3L4 9l6.1-1.4z"/>
+                            </svg>
+                        </span>
+                        Gestion complète de la flotte de véhicules
+                    </li>
+                    <li>
+                        <span class="puce">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 7v5l3 3"/>
+                            </svg>
+                        </span>
+                        Réservation et suivi en temps réel
+                    </li>
+                    <li>
+                        <span class="puce">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1v22"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </span>
+                        Tarifs transparents et calcul automatique
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ===== Right panel: form ===== -->
+        <div class="panneau-formulaire">
+            <div class="carte-connexion">
+
+                <h2>Connexion</h2>
+                <p class="sous-titre">Accédez à votre espace</p>
+
+                <div id="alerteErreur" class="alerte erreur"></div>
+                <div id="alerteInfo" class="alerte info"></div>
+
+                <!-- Social buttons -->
+                <button type="button" class="bouton-social bouton-google"
+                        title="Connectez-vous avec votre compte de l'application"
+                        onclick="document.getElementById('username').focus()">
+                    <svg viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.4H12v4.6h6.5a5.5 5.5 0 0 1-2.4 3.6v2.9h3.9c2.2-2.1 3.5-5.2 3.5-8.7z"/>
+                        <path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-2.9c-1 .7-2.4 1.1-4 1.1-3 0-5.6-2.1-6.6-4.9H1.5v3A12 12 0 0 0 12 24z"/>
+                        <path fill="#FBBC05" d="M5.4 14.5a7.2 7.2 0 0 1 0-4.6V7H1.5a11.8 11.8 0 0 0 0 10.6l3.9-3.1z"/>
+                        <path fill="#EA4335" d="M12 4.7c1.7 0 3.3.6 4.6 1.8l3.4-3.4A11.8 11.8 0 0 0 1.5 7l3.9 3.1c1-2.8 3.6-5.4 6.6-5.4z"/>
+                    </svg>
+                    Se connecter avec Google
+                </button>
+
+                <button type="button" class="bouton-social bouton-apple"
+                        title="Connectez-vous avec votre compte de l'application"
+                        onclick="document.getElementById('username').focus()">
+                    <svg viewBox="0 0 384 512" fill="currentColor">
+                        <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                    </svg>
+                    Se connecter avec Apple
+                </button>
+
+                <div class="separateur">ou</div>
+
+                <form method="post" action="login" autocomplete="off">
+
+                    <div class="champ">
+                        <label for="username">Nom d'utilisateur</label>
+                        <div class="corps-champ">
+                            <svg class="icone-champ" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>
+                            </svg>
+                            <input type="text" id="username" name="username"
+                                   placeholder="admin" autofocus required/>
+                        </div>
+                    </div>
+
+                    <div class="champ">
+                        <label for="password">Mot de passe</label>
+                        <div class="corps-champ">
+                            <svg class="icone-champ" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="10" width="16" height="10" rx="2"/>
+                                <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+                            </svg>
+                            <input type="password" id="password" name="password"
+                                   placeholder="••••••••" required/>
+                            <button type="button" class="oeil"
+                                    id="btnOeil" aria-label="Afficher le mot de passe"
+                                    onclick="toggleMotDePasse()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="bouton-connexion">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                            <path d="M10 17l5-5-5-5"/>
+                            <path d="M15 12H3"/>
+                        </svg>
+                        Se connecter
+                    </button>
+
+                </form>
+
+                <p class="pied-carte">
+                    Pas encore de compte ?
+                    <a href="registration.html">S'inscrire maintenant</a>
+                </p>
+
+                <p class="copyright">Gestion de location de voitures &copy; 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Shows the alert depending on the URL parameter (?error ?logout ?inscrit=1)
+        var params = new URLSearchParams(window.location.search);
+        var alerteErreur = document.getElementById("alerteErreur");
+        var alerteInfo = document.getElementById("alerteInfo");
+
+        if (params.has("error")) {
+            alerteErreur.textContent = "Identifiants incorrects. Veuillez réessayer.";
+            alerteErreur.style.display = "block";
+        } else if (params.has("logout")) {
+            alerteInfo.textContent = "Vous avez été déconnecté.";
+            alerteInfo.style.display = "block";
+        } else if (params.get("inscrit") === "1") {
+            alerteInfo.textContent = "Compte créé avec succès. Connectez-vous.";
+            alerteInfo.style.display = "block";
+        }
+
+        function toggleMotDePasse() {
+            var champ = document.getElementById("password");
+            champ.type = champ.type === "password" ? "text" : "password";
+        }
+    </script>
+</body>
+</html>

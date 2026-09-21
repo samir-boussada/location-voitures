@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<!--
+    ============================================================
+     Main page  Car rental
+     JSF + PrimeFaces + Spring Boot application
+     Author: LocationVoitures Team
+     Version: 1.0.0
+    ============================================================
+     Tabs:
+       1. Dashboard  Statistics and quick actions
+       2. New rental Calculation and confirmation
+       3. Cars  List, search, add, edit, delete
+       4. Clients List, add, edit, delete
+    ============================================================
+-->
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <title>Location de voitures</title>
+    <!-- v=3 : forces browsers to reload the new stylesheet -->
+    <link rel="stylesheet" type="text/css"
+          href="#{request.contextPath}/jakarta.faces.resource/style.css.xhtml?ln=css&amp;v=3"/>
+</h:head>
+
+<h:body>
+
+    <h:form id="formulaire" enctype="multipart/form-data">
+
+        <p:growl id="messages"/>
+
+        <div class="entete">
+            <div class="menu-utilisateur">
+                <span class="icone-utilisateur pi pi-user"/>
+                <span class="nom-utilisateur">admin</span>
+                <button type="button" class="bouton-logout" title="Se déconnecter"
+                        onclick="document.getElementById('formLogout').submit();">
+                    <span class="pi pi-sign-out"/> Déconnexion
+                </button>
+            </div>
+            <h1>🚗 Location de voitures</h1>
+            <p>Gestion des véhicules, clients et locations</p>
+        </div>
+
+        <!-- ============================================================
+             TAB 1  DASHBOARD
+             Shows global statistics and quick actions
+        ============================================================ -->
+        <p:tabView widgetVar="onglets">
+
+            <!-- DASHBOARD TAB -->
+            <p:tab title="Tableau de bord">
+
+                <div class="cartes-stats">
+<p:commandLink styleClass="carte-stat carte-lien bleu"
+                               action="#{locationView.filtrerParStatut(null)}"
+                               process="@this"
+                               update="@widgetVar(wTableVoitures)"
+                               onclick="PF('onglets').select(2)">
+                        <span class="icone pi pi-car"/>
+                        <div>
+                            <p>Total voitures</p>
+                            <h2>#{locationView.totalVoitures}</h2>
+                        </div>
+                    </p:commandLink>
+
+<p:commandLink styleClass="carte-stat carte-lien vert"
+                               action="#{locationView.filtrerParStatut('DISPONIBLE')}"
+                               process="@this"
+                               update="@widgetVar(wTableVoitures)"
+                               onclick="PF('onglets').select(2)">
+                        <span class="icone pi pi-check-circle"/>
+                        <div>
+                            <p>Disponibles</p>
+                            <h2>#{locationView.nombreVoituresDisponibles}</h2>
+                        </div>
+                    </p:commandLink>
+
+<p:commandLink styleClass="carte-stat carte-lien orange"
+                               action="#{locationView.filtrerParStatut('OCCUPE')}"
+                               process="@this"
+                               update="@widgetVar(wTableVoitures)"
+                               onclick="PF('onglets').select(2)">
+                        <span class="icone pi pi-clock"/>
+                        <div>
+                            <p>Occupées</p>
+                            <h2>#{locationView.nombreVoituresOccupees}</h2>
+                        </div>
+                    </p:commandLink>
+
+<p:commandLink styleClass="carte-stat carte-lien rouge"
+                               action="#{locationView.filtrerParStatut('EN_PANNE')}"
+                               process="@this"
+                               update="@widgetVar(wTableVoitures)"
+                               onclick="PF('onglets').select(2)">
+                        <span class="icone pi pi-exclamation-triangle"/>
+                        <div>
+                            <p>⚠️ En panne</p>
+                            <h2>#{locationView.nombreVoituresEnPanne}</h2>
+                        </div>
+                    </p:commandLink>
+
+<p:commandLink styleClass="carte-stat carte-lien saumon"
+                               action="#{locationView.voirClients}"
+                               process="@this"
+                               onclick="PF('onglets').select(3)">
+                        <span class="icone pi pi-users"/>
+                        <div>
+                            <p>Clients</p>
+                            <h2>#{locationView.totalClients}</h2>
+                        </div>
+                    </p:commandLink>
+
+<p:commandLink styleClass="carte-stat carte-lien violet"
+                               action="#{locationView.voirLocations}"
+                               process="@this"
+                               onclick="PF('onglets').select(4)">
+                        <span class="icone pi pi-list"/>
+                        <div>
+                            <p>Locations</p>
+                            <h2>#{locationView.totalLocations}</h2>
+                        </div>
+                    </p:commandLink>
+
+<p:commandLink styleClass="carte-stat carte-lien vert"
+                               action="#{locationView.voirLocations}"
+                               process="@this"
+                               onclick="PF('onglets').select(4)">
+                        <span class="icone pi pi-money-bill"/>
+                        <div>
+                            <p>Revenus</p>
+                            <h2>#{locationView.chiffreAffaires} DZD</h2>
+                        </div>
+                    </p:commandLink>
+                </div>
+
+                <p:panel header="Actions rapides" styleClass="carte panel-actions">
+                    <p:commandButton value="Nouvelle location"
+                                     icon="pi pi-plus"
+                                     styleClass="bouton-primaire"
+                                     onclick="PF('onglets').select(1)"
+                                     process="@this"
+                                     style="margin-right:10px"/>
+                    <p:commandButton value="Ajouter une voiture"
+                                     icon="pi pi-car"
+                                     action="#{locationView.nouvelleVoiture}"
+                                     update=":formulaire:dialogVoiture"
+                                     oncomplete="PF('dialogVoiture').show()"
+                                     process="@this"
+                                     styleClass="bouton-contour"
+                                     style="margin-right:10px"/>
+                    <p:commandButton value="Ajouter un client"
+                                     icon="pi pi-user-plus"
+                                     action="#{locationView.nouveauClient}"
+                                     update=":formulaire:dialogClient"
+                                     oncomplete="PF('dialogClient').show()"
+                                     process="@this"
+                                     styleClass="bouton-contour"/>
+                </p:panel>
+
+            </p:tab>
+
+            <!-- ============================================================
+                 TAB 2 — NEW RENTAL
+                 Car, client and date selection
+                 Automatic total price calculation
+            ============================================================ -->
+            <!-- RENTAL TAB -->
+            <p:tab title="Nouvelle location">
+
+                <p:panel id="panelLocation" header="Calculer une location" styleClass="carte">
+
+                    <p:panelGrid columns="2" styleClass="grille-formulaire">
+
+                        <p:outputLabel value="Voiture disponible"/>
+                        <p:selectOneMenu value="#{locationView.voitureSelectionneeId}">
+                            <f:selectItem itemLabel="Choisir une voiture"
+                                          itemValue="#{null}"
+                                          noSelectionOption="true"/>
+                            <f:selectItems value="#{locationView.voituresDisponibles}"
+                                           var="v"
+                                           itemValue="#{v.id}"
+                                           itemLabel="#{v.marque} #{v.modele} - #{v.prixJour} DZD / jour"/>
+                            <p:ajax update="@widgetVar(wResumePrix)"/>
+                        </p:selectOneMenu>
+
+                        <p:outputLabel value="Client"/>
+                        <p:selectOneMenu value="#{locationView.location.clientId}">
+                            <f:selectItem itemLabel="Choisir un client"
+                                          itemValue="#{null}"
+                                          noSelectionOption="true"/>
+                            <f:selectItems value="#{locationView.clients}"
+                                           var="c"
+                                           itemValue="#{c.id}"
+                                           itemLabel="#{c.nomComplet}"/>
+                        </p:selectOneMenu>
+
+                        <p:outputLabel value="Date de début"/>
+                        <p:datePicker value="#{locationView.dateDebut}"
+                                      pattern="dd/MM/yyyy"
+                                      showIcon="true">
+                            <p:ajax update="@widgetVar(wResumePrix)"/>
+                        </p:datePicker>
+
+                        <p:outputLabel value="Date de fin"/>
+                        <p:datePicker value="#{locationView.dateFin}"
+                                      pattern="dd/MM/yyyy"
+                                      showIcon="true">
+                            <p:ajax update="@widgetVar(wResumePrix)"/>
+                        </p:datePicker>
+
+                        <p:outputLabel value="Point de départ"/>
+                        <p:inputText value="#{locationView.pointDepart}"
+                                     placeholder="Ex : Aéroport Houari Boumediene"
+                                     styleClass="champ-texte"
+                                     maxlength="255"/>
+
+                        <p:outputLabel value="Point de retour"/>
+                        <p:inputText value="#{locationView.pointRetour}"
+                                     placeholder="Ex : Agence Bab Ezzouar"
+                                     styleClass="champ-texte"
+                                     maxlength="255"/>
+
+                        <p:outputLabel value="Remise (optionnel)"/>
+                        <p:inputNumber value="#{locationView.remise}"
+                                       decimalPlaces="2"
+                                       minValue="0">
+                            <p:ajax update="@widgetVar(wResumePrix)"/>
+                        </p:inputNumber>
+
+                    </p:panelGrid>
+
+                    <p:outputPanel id="resume" widgetVar="wResumePrix" styleClass="resume-prix">
+                        <h3>📋 Résumé</h3>
+                        <p>Nombre de jours : <strong>#{locationView.nombreJours}</strong></p>
+                        <p>Prix total : <strong>#{locationView.prixTotal} DZD</strong></p>
+                        <p>Remise : <strong>-#{locationView.remise} DZD</strong></p>
+                        <p>Total Revenue : <strong>#{locationView.totalRevenue} DZD</strong></p>
+                    </p:outputPanel>
+
+                    <p:commandButton value="Confirmer la location"
+                                     icon="pi pi-check"
+                                     action="#{locationView.confirmerLocation}"
+                                     process="panelLocation"
+                                     update="formulaire"
+                                     styleClass="bouton-ajouter"/>
+                </p:panel>
+
+            </p:tab>
+
+            <!-- ============================================================
+                 TAB 3 — CARS
+                 CRUD table with search bar
+                 Colored statuses: AVAILABLE (green), OCCUPIED (orange),
+                 OUT OF ORDER (red), MAINTENANCE (grey)
+            ============================================================ -->
+            <!-- CARS TAB -->
+            <p:tab title="Voitures">
+
+                <div class="barre-outils">
+                    <p:inputText value="#{locationView.recherche}"
+                                 placeholder="🔍 Rechercher une voiture..."
+                                 styleClass="recherche">
+                        <p:ajax event="keyup"
+                                listener="#{locationView.rechercher}"
+                                update="tableVoitures"
+                                delay="300"/>
+                    </p:inputText>
+
+                    <span class="filtre-item">
+                        <p:inputNumber value="#{locationView.prixMax}"
+                                       placeholder="Prix max / jour (DZD)"
+                                       decimalPlaces="0"
+                                       styleClass="filtre-prix">
+                            <p:ajax event="change"
+                                    listener="#{locationView.appliquerFiltres}"
+                                    update="tableVoitures"/>
+                        </p:inputNumber>
+                    </span>
+
+                    <span class="filtre-item">
+                        <p:selectOneMenu value="#{locationView.statutFiltre}"
+                                         styleClass="filtre-statut">
+                            <f:selectItem itemValue="TOUTES" itemLabel="Tous les statuts"/>
+                            <f:selectItems value="#{locationView.statuts}"/>
+                            <p:ajax event="change"
+                                    listener="#{locationView.appliquerFiltres}"
+                                    update="tableVoitures"/>
+                        </p:selectOneMenu>
+                    </span>
+
+                    <p:commandButton value="Ajouter une voiture"
+                                     icon="pi pi-plus"
+                                     action="#{locationView.nouvelleVoiture}"
+                                     update=":formulaire:dialogVoiture"
+                                     oncomplete="PF('dialogVoiture').show()"
+                                     process="@this"
+                                     styleClass="bouton-ajouter"/>
+                </div>
+
+                <p:dataTable id="tableVoitures"
+                             widgetVar="wTableVoitures"
+                             value="#{locationView.voitures}"
+                             var="v"
+                             emptyMessage="Aucune voiture trouvée"
+                             styleClass="tableau"
+                             paginator="true"
+                             rows="6"
+                             paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Photo" style="width:100px">
+                        <img src="#{request.contextPath}/images/voitures/#{not empty v.photo ? v.photo : '_voiture.svg'}"
+                             alt="#{v.libelle}" class="mini-photo"/>
+                    </p:column>
+
+                    <p:column headerText="Marque">
+                        #{v.marque}
+                    </p:column>
+
+                    <p:column headerText="Modèle">
+                        #{v.modele}
+                    </p:column>
+
+                    <p:column headerText="Moteur">
+                        #{empty v.moteur ? '—' : v.moteur}
+                    </p:column>
+
+                    <p:column headerText="Transmission">
+                        <h:outputText value="#{v.transmission}"
+                                      styleClass="transmission #{v.transmission eq 'Automatique' ? 'auto' : 'manuelle'}"/>
+                    </p:column>
+
+                    <p:column headerText="Prix / jour">
+                        #{v.prixJour} DZD
+                    </p:column>
+
+                    <p:column headerText="Statut">
+                        <h:outputText value="#{v.statut}"
+                                      styleClass="#{v.statut eq 'DISPONIBLE' ? 'statut disponible' :
+                                                    v.statut eq 'OCCUPE' ? 'statut occupe' :
+                                                    v.statut eq 'EN_PANNE' ? 'statut panne' :
+                                                    'statut maintenance'}"/>
+                    </p:column>
+
+                    <p:column headerText="Actions">
+                        <p:commandButton value="Fiche"
+                                         icon="pi pi-info-circle"
+                                         action="#{locationView.voirFiche(v)}"
+                                         update=":formulaire:dialogFiche"
+                                         oncomplete="PF('dialogFiche').show()"
+                                         process="@this"
+                                         styleClass="bouton-fiche"/>
+
+                        <p:commandButton value="Modifier"
+                                         icon="pi pi-pencil"
+                                         action="#{locationView.modifierVoiture(v)}"
+                                         update=":formulaire:dialogVoiture"
+                                         oncomplete="PF('dialogVoiture').show()"
+                                         process="@this"
+                                         styleClass="bouton-modifier"/>
+
+                        <p:commandButton value="Supprimer"
+                                         icon="pi pi-trash"
+                                         action="#{locationView.supprimerVoiture(v.id)}"
+                                         process="@this"
+                                         update="formulaire"
+                                         styleClass="bouton-supprimer"/>
+                    </p:column>
+
+                </p:dataTable>
+
+            </p:tab>
+
+            <!-- ============================================================
+                 TAB 4 — CLIENTS
+                 CRUD table for client management
+            ============================================================ -->
+            <!-- CLIENTS TAB -->
+            <p:tab title="Clients">
+
+                <div class="barre-outils">
+                    <h2>Liste des clients</h2>
+
+                    <p:commandButton value="Ajouter un client"
+                                     icon="pi pi-user-plus"
+                                     action="#{locationView.nouveauClient}"
+                                     update=":formulaire:dialogClient"
+                                     oncomplete="PF('dialogClient').show()"
+                                     process="@this"
+                                     styleClass="bouton-ajouter"/>
+                </div>
+
+                <p:dataTable value="#{locationView.clients}"
+                             var="c"
+                             emptyMessage="Aucun client trouvé"
+                             styleClass="tableau"
+                             paginator="true"
+                             rows="6">
+
+                    <p:column headerText="Nom complet">
+                        #{c.nomComplet}
+                    </p:column>
+
+                    <p:column headerText="E-mail">
+                        #{c.email}
+                    </p:column>
+
+                    <p:column headerText="Téléphone">
+                        #{c.telephone}
+                    </p:column>
+
+                    <p:column headerText="N° permis">
+                        #{c.numeroPermis}
+                    </p:column>
+
+                    <p:column headerText="Actions">
+                        <p:commandButton value="Modifier"
+                                         icon="pi pi-pencil"
+                                         action="#{locationView.modifierClient(c)}"
+                                         update=":formulaire:dialogClient"
+                                         oncomplete="PF('dialogClient').show()"
+                                         process="@this"
+                                         styleClass="bouton-modifier"/>
+
+                        <p:commandButton value="Supprimer"
+                                         icon="pi pi-trash"
+                                         action="#{locationView.supprimerClient(c.id)}"
+                                         process="@this"
+                                         update="formulaire"
+                                         styleClass="bouton-supprimer"/>
+                    </p:column>
+
+                </p:dataTable>
+
+            </p:tab>
+
+            <!-- ============================================================
+                 TAB 5 — RENTALS
+                 List of recorded rentals (client, car, period)
+            ============================================================ -->
+            <!-- RENTALS TAB -->
+            <p:tab title="Locations">
+
+                <div class="barre-outils">
+                    <h2>Liste des locations</h2>
+                </div>
+
+                <p:dataTable value="#{locationView.locations}"
+                             var="loc"
+                             emptyMessage="Aucune location enregistrée"
+                             styleClass="tableau"
+                             paginator="true"
+                             rows="6"
+                             paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Voiture">
+                        #{loc.voitureLabel}
+                    </p:column>
+
+                    <p:column headerText="Client">
+                        #{loc.clientLabel}
+                    </p:column>
+
+                    <p:column headerText="Début">
+                        #{loc.dateDebut}
+                    </p:column>
+
+                    <p:column headerText="Fin">
+                        #{loc.dateFin}
+                    </p:column>
+
+                    <p:column headerText="Départ">
+                        #{loc.pointDepart}
+                    </p:column>
+
+                    <p:column headerText="Retour">
+                        #{loc.pointRetour}
+                    </p:column>
+
+                    <p:column headerText="Jours">
+                        #{loc.nombreJours}
+                    </p:column>
+
+                    <p:column headerText="Total">
+                        #{loc.prixTotal} DZD
+                    </p:column>
+
+                    <p:column headerText="Remise">
+                        #{loc.remise} DZD
+                    </p:column>
+
+                    <p:column headerText="Total Revenue">
+                        #{loc.totalRevenue} DZD
+                    </p:column>
+
+                    <p:column headerText="Actions">
+                        <p:commandButton value="Modifier"
+                                         icon="pi pi-pencil"
+                                         action="#{locationView.modifierLocation(loc)}"
+                                         update=":formulaire:dialogLocation"
+                                         oncomplete="PF('dialogLocation').show()"
+                                         process="@this"
+                                         styleClass="bouton-modifier"/>
+
+                        <p:commandButton value="Supprimer"
+                                         icon="pi pi-trash"
+                                         action="#{locationView.supprimerLocation(loc.id)}"
+                                         process="@this"
+                                         update="formulaire"
+                                         styleClass="bouton-supprimer"/>
+                    </p:column>
+
+                </p:dataTable>
+
+            </p:tab>
+
+        </p:tabView>
+
+        <!-- ============================================================
+             CAR WINDOW (dialog)
+             Add / edit car form
+        ============================================================ -->
+        <!-- CAR WINDOW -->
+        <p:dialog id="dialogVoiture"
+                  widgetVar="dialogVoiture"
+                  header="Voiture"
+                  modal="true"
+                  width="520">
+
+            <p:panelGrid columns="2" styleClass="grille-formulaire">
+
+                <p:outputLabel value="Marque"/>
+                <p:inputText value="#{locationView.voiture.marque}" required="true"/>
+
+                <p:outputLabel value="Modèle"/>
+                <p:inputText value="#{locationView.voiture.modele}" required="true"/>
+
+                <p:outputLabel value="Prix par jour (DZD)"/>
+                <p:inputNumber value="#{locationView.voiture.prixJour}"
+                               decimalPlaces="2"
+                               required="true"/>
+
+                <p:outputLabel value="Statut"/>
+                <p:selectOneMenu value="#{locationView.voiture.statut}">
+                    <f:selectItems value="#{locationView.statuts}"/>
+                </p:selectOneMenu>
+
+                <p:outputLabel value="Moteur (fiche technique)"/>
+                <p:inputText value="#{locationView.voiture.moteur}"
+                             placeholder="ex : 1.6L essence 110 ch"/>
+
+                <p:outputLabel value="Transmission"/>
+                <p:selectOneMenu value="#{locationView.voiture.transmission}">
+                    <f:selectItem itemLabel="— Choisir —" itemValue="#{null}" noSelectionOption="true"/>
+                    <f:selectItems value="#{locationView.transmissions}"/>
+                </p:selectOneMenu>
+
+                <p:outputLabel value="Photo (depuis l'ordinateur)"/>
+                <div class="champ-photo">
+                    <input type="file" id="photoChoisie" accept="image/*"
+                           style="display:none"
+                           onchange="chargerPhoto(this)"/>
+                    <label for="photoChoisie" class="bouton-contour"
+                           style="cursor:pointer; display:inline-block; margin-bottom:6px;">
+                        Choisir une photo
+                    </label>
+                    <h:outputText id="nomPhotoChoisie" styleClass="nom-photo"/>
+                    <h:inputHidden id="photoBase64" value="#{locationView.photoBase64}"/>
+                    <h:inputHidden id="photoNom" value="#{locationView.photoNom}"/>
+                    <h:outputText value="#{locationView.voiture.photo}"
+                                  rendered="#{not empty locationView.voiture.photo}"
+                                  styleClass="nom-photo"/>
+                </div>
+
+            </p:panelGrid>
+
+            <p:commandButton value="Enregistrer"
+                             icon="pi pi-save"
+                             action="#{locationView.sauvegarderVoiture}"
+                             process="dialogVoiture"
+                             update="formulaire"
+                             oncomplete="PF('dialogVoiture').hide()"
+                             styleClass="bouton-ajouter"/>
+
+        </p:dialog>
+
+        <!-- ============================================================
+             TECHNICAL SHEET (dialog)
+             Shows the characteristics of the selected car
+        ============================================================ -->
+        <!-- TECHNICAL SHEET -->
+        <p:dialog id="dialogFiche"
+                  widgetVar="dialogFiche"
+                  header="Fiche technique"
+                  modal="true"
+                  width="520"
+                  contentStyle="overflow:visible">
+
+            <p:outputPanel rendered="#{locationView.ficheSelectionnee ne null}"
+                           var="f"
+                           value="#{locationView.ficheSelectionnee}">
+
+                <div class="fiche-photo">
+                    <img src="#{request.contextPath}/images/voitures/#{not empty f.photo ? f.photo : '_voiture.svg'}"
+                         alt="#{f.libelle}"/>
+                </div>
+
+                <p:panelGrid columns="2" styleClass="grille-formulaire">
+
+                    <p:outputLabel value="Véhicule"/>
+                    <h:outputText value="#{f.libelle}" styleClass="fort"/>
+
+                    <p:outputLabel value="Moteur"/>
+                    <h:outputText value="#{empty f.moteur ? '—' : f.moteur}"/>
+
+                    <p:outputLabel value="Transmission"/>
+                    <h:outputText value="#{empty f.transmission ? '—' : f.transmission}"/>
+
+                    <p:outputLabel value="Prix / jour"/>
+                    <h:outputText value="#{f.prixJour} DZD"/>
+
+                    <p:outputLabel value="Statut"/>
+                    <h:outputText value="#{f.statut}"/>
+
+                </p:panelGrid>
+
+            </p:outputPanel>
+
+        </p:dialog>
+
+        <!-- ============================================================
+             CLIENT WINDOW (dialog)
+             Add / edit a client, direct save
+             (no email or SMS code verification).
+        ============================================================ -->
+        <!-- CLIENT WINDOW -->
+        <p:dialog id="dialogClient"
+                  widgetVar="dialogClient"
+                  header="Client"
+                  modal="true"
+                  width="480">
+
+            <p:outputPanel id="etapeInfos">
+
+                <p:panelGrid columns="2" styleClass="grille-formulaire">
+
+                    <p:outputLabel value="Nom complet"/>
+                    <p:inputText value="#{locationView.client.nomComplet}" required="true"/>
+
+                    <p:outputLabel value="E-mail (facultatif)"/>
+                    <p:inputText value="#{locationView.client.email}"/>
+
+                    <p:outputLabel value="Téléphone"/>
+                    <p:inputText value="#{locationView.client.telephone}" required="true"/>
+
+                    <p:outputLabel value="Numéro de permis (optionnel)"/>
+                    <p:inputText value="#{locationView.client.numeroPermis}"/>
+
+                </p:panelGrid>
+
+                <p:commandButton value="Enregistrer"
+                                 icon="pi pi-save"
+                                 action="#{locationView.sauvegarderClient}"
+                                 process="etapeInfos"
+                                 update="formulaire"
+                                 oncomplete="PF('dialogClient').hide()"
+                                 styleClass="bouton-ajouter"/>
+
+            </p:outputPanel>
+
+        </p:dialog>
+
+        <!-- ============================================================
+             RENTAL WINDOW (dialog)
+             Edit an existing rental:
+             car, client, dates with price recalculation.
+        ============================================================ -->
+        <!-- RENTAL WINDOW -->
+        <p:dialog id="dialogLocation"
+                  widgetVar="dialogLocation"
+                  header="Modifier la location"
+                  modal="true"
+                  width="520">
+
+            <p:panelGrid columns="2" styleClass="grille-formulaire">
+
+                <p:outputLabel value="Voiture"/>
+                <p:selectOneMenu value="#{locationView.editVoitureId}">
+                    <f:selectItem itemLabel="Choisir une voiture"
+                                  itemValue="#{null}"
+                                  noSelectionOption="true"/>
+                    <f:selectItems value="#{locationView.voituresPourEdit}"
+                                   var="v"
+                                   itemValue="#{v.id}"
+                                   itemLabel="#{v.marque} #{v.modele} - #{v.prixJour} DZD / jour"/>
+                    <p:ajax update="@widgetVar(wResumeLocation)"/>
+                </p:selectOneMenu>
+
+                <p:outputLabel value="Client"/>
+                <p:selectOneMenu value="#{locationView.editClientId}">
+                    <f:selectItem itemLabel="Choisir un client"
+                                  itemValue="#{null}"
+                                  noSelectionOption="true"/>
+                    <f:selectItems value="#{locationView.clients}"
+                                   var="c"
+                                   itemValue="#{c.id}"
+                                   itemLabel="#{c.nomComplet}"/>
+                </p:selectOneMenu>
+
+                <p:outputLabel value="Date de début"/>
+                <p:datePicker value="#{locationView.locationSelectionnee.dateDebut}"
+                              pattern="dd/MM/yyyy"
+                              showIcon="true">
+                    <p:ajax update="@widgetVar(wResumeLocation)"/>
+                </p:datePicker>
+
+                <p:outputLabel value="Date de fin"/>
+                <p:datePicker value="#{locationView.locationSelectionnee.dateFin}"
+                              pattern="dd/MM/yyyy"
+                              showIcon="true">
+                    <p:ajax update="@widgetVar(wResumeLocation)"/>
+                </p:datePicker>
+
+            </p:panelGrid>
+
+            <p:outputPanel id="resumeLocation" widgetVar="wResumeLocation" styleClass="resume-prix">
+                <p>Nombre de jours : <strong>#{locationView.joursModification}</strong></p>
+                <p>Prix total : <strong>#{locationView.prixTotalModification} DZD</strong></p>
+            </p:outputPanel>
+
+            <p:commandButton value="Enregistrer"
+                             icon="pi pi-check"
+                             action="#{locationView.sauvegarderLocationModifiee}"
+                             process="dialogLocation"
+                             update="formulaire"
+                             oncomplete="PF('dialogLocation').hide()"
+                             styleClass="bouton-ajouter"
+                             style="margin-right:10px"/>
+
+            <p:commandButton value="Annuler"
+                             icon="pi pi-times"
+                             type="button"
+                             onclick="PF('dialogLocation').hide()"
+                             styleClass="bouton-supprimer"/>
+
+        </p:dialog>
+
+    </h:form>
+
+    <!-- Logout form, OUTSIDE the main form
+         (nested HTML forms do not work).
+         Submitted by JavaScript (logout button in the header). -->
+    <form id="formLogout" action="#{request.contextPath}/logout"
+          method="post" style="display:none"></form>
+
+    <!-- Floating back-to-top button -->
+    <button type="button" class="bouton-haut"
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+            title="Retour en haut">
+        <span class="pi pi-arrow-up"/>
+    </button>
+
+    <script type="text/javascript">
+        // Resizes the chosen photo in the browser (canvas), whatever its
+        // original size, then keeps it in base64 for saving.
+        function chargerPhoto(champFichier) {
+            var fichier = champFichier.files &amp;&amp; champFichier.files[0];
+            var casePhoto = document.getElementById("formulaire:photoBase64");
+            var caseNom = document.getElementById("formulaire:photoNom");
+            var zoneNom = document.getElementById("formulaire:nomPhotoChoisie");
+            if (!fichier || !casePhoto || !caseNom) {
+                return;
+            }
+            if (!/^image\//.test(fichier.type)) {
+                alert("Veuillez choisir une image (JPG, PNG, GIF...).");
+                return;
+            }
+            var image = new Image();
+            image.onload = function () {
+                var max = 1600;
+                var ratio = Math.min(1, max / Math.max(image.width, image.height));
+                var largeur = Math.round(image.width * ratio);
+                var hauteur = Math.round(image.height * ratio);
+                var canvas = document.createElement("canvas");
+                canvas.width = largeur;
+                canvas.height = hauteur;
+                var ctx = canvas.getContext("2d");
+                ctx.drawImage(image, 0, 0, largeur, hauteur);
+                canvas.toBlob(function (blob) {
+                    var lecteur = new FileReader();
+                    lecteur.onload = function () {
+                        casePhoto.value = lecteur.result;
+                        caseNom.value = fichier.name;
+                        if (zoneNom) {
+                            zoneNom.textContent = fichier.name + " (ajustée " + largeur + "x" + hauteur + ")";
+                        }
+                    };
+                    lecteur.readAsDataURL(blob);
+                }, "image/jpeg", 0.82);
+            };
+            image.onerror = function () {
+                alert("Impossible de lire cette image.");
+            };
+            image.src = URL.createObjectURL(fichier);
+        }
+    </script>
+
+</h:body>
+</html>

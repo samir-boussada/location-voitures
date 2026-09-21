@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Inscription — Location de voitures</title>
+    <style>
+        :root {
+            --bleu: #2563eb;
+            --indigo: #4f46e5;
+            --encre: #1f2937;
+            --gris: #6b7280;
+            --bordure: #e5e7eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+            background: #eef2ff;
+            color: var(--encre);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .ecran-inscription {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .panneau-marque {
+            flex: 1 1 52%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 560px;
+            background: linear-gradient(160deg, #1e3a8a 0%, #1d4ed8 60%, #000 160%);
+        }
+
+        .photo-bmw {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .voile {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%,
+                        rgba(30, 58, 138, 0.25) 45%,
+                        rgba(2, 6, 23, 0.92) 100%);
+        }
+
+        .bloc-marque {
+            position: relative;
+            z-index: 1;
+            color: #fff;
+            padding: 44px 56px 52px;
+            max-width: 560px;
+        }
+
+        .bloc-marque h1 {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1.12;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        .bloc-marque .slogan {
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.94;
+            max-width: 420px;
+        }
+
+        .panneau-formulaire {
+            flex: 1 1 48%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+
+        .carte-inscription {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border: 1px solid var(--bordure);
+            border-radius: 22px;
+            box-shadow: 0 24px 60px rgba(30, 58, 138, 0.14);
+            padding: 38px 36px;
+        }
+
+        .carte-inscription h2 {
+            font-size: 25px;
+            margin-bottom: 6px;
+        }
+
+        .carte-inscription .sous-titre {
+            color: var(--gris);
+            font-size: 14px;
+            margin-bottom: 22px;
+        }
+
+        .alerte {
+            display: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        .alerte.erreur {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .champ {
+            margin-bottom: 16px;
+        }
+        .champ label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 7px;
+        }
+
+        .corps-champ {
+            position: relative;
+        }
+        .corps-champ svg.icone-champ {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px; height: 18px;
+            stroke: #9ca3af;
+            pointer-events: none;
+        }
+        .corps-champ input {
+            width: 100%;
+            height: 46px;
+            padding: 0 44px;
+            border: 1.5px solid var(--bordure);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--encre);
+            background: #fff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            outline: none;
+        }
+        .corps-champ input::placeholder { color: #9ca3af; }
+        .corps-champ input:focus {
+            border-color: var(--bleu);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .bouton-inscription {
+            width: 100%;
+            height: 48px;
+            margin-top: 8px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--bleu) 0%, var(--indigo) 100%);
+            color: #fff;
+            font-size: 15.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.32);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .bouton-inscription:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4);
+        }
+
+        .pied-carte {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 13.5px;
+            color: var(--gris);
+        }
+        .pied-carte a {
+            color: var(--bleu);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .pied-carte a:hover { text-decoration: underline; }
+
+        @media (max-width: 860px) {
+            .ecran-inscription { flex-direction: column; }
+            .panneau-marque { min-height: 320px; }
+            .bloc-marque { padding: 30px 26px 34px; }
+            .bloc-marque h1 { font-size: 26px; }
+            .panneau-formulaire { padding: 26px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ecran-inscription">
+
+        <div class="panneau-marque">
+            <img src="images/bmw-3-touring.jpg" alt="BMW Série 3 Touring" class="photo-bmw"/>
+            <div class="voile"></div>
+            <div class="bloc-marque">
+                <h1>Rejoignez<br/>Location de voitures</h1>
+                <p class="slogan">
+                    Créez votre compte pour préparer vos futures locations
+                    et bénéficier d'un suivi rapide et fiable.
+                </p>
+            </div>
+        </div>
+
+        <div class="panneau-formulaire">
+            <div class="carte-inscription">
+
+                <h2>Inscription</h2>
+                <p class="sous-titre">Créez un nouveau compte</p>
+
+                <div id="alerteErreur" class="alerte erreur"></div>
+
+                <form method="post" action="inscription" autocomplete="off">
+
+                    <div class="champ">
+                        <label for="nom">Nom complet</label>
+                        <div class="corps-champ">
+                            <svg class="icone-champ" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>
+                            </svg>
+                            <input type="text" id="nom" name="nom" placeholder="Votre nom" required/>
+                        </div>
+                    </div>
+
+                    <div class="champ">
+                        <label for="username">Nom d'utilisateur</label>
+                        <div class="corps-champ">
+                            <svg class="icone-champ" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <input type="text" id="username" name="username" placeholder="Identifiant unique" required/>
+                        </div>
+                    </div>
+
+                    <div class="champ">
+                        <label for="email">Adresse e-mail</label>
+                        <div class="corps-champ">
+                            <svg class="icone-champ" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                <path d="m22 7-10 6L2 7"/>
+                            </svg>
+                            <input type="email" id="email" name="email" placeholder="exemple@mail.com" required/>
+                        </div>
+                    </div>
+
+                    <div class="champ">
+                        <label for="motDePasse">Mot de passe</label>
+                        <div class="corps-champ">
+                            <svg class="icone-champ" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="10" width="16" height="10" rx="2"/>
+                                <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+                            </svg>
+                            <input type="password" id="motDePasse" name="motDePasse"
+                                   placeholder="6 caractères minimum" required minlength="6"/>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="bouton-inscription">
+                        Créer mon compte
+                    </button>
+
+                </form>
+
+                <p class="pied-carte">
+                    Déjà un compte ?
+                    <a href="login.html">Se connecter</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var params = new URLSearchParams(window.location.search);
+        var erreur = document.getElementById("alerteErreur");
+        if (params.get("error") === "existe") {
+            erreur.textContent = "Ce nom d'utilisateur ou cet e-mail existe déjà.";
+            erreur.style.display = "block";
+        } else if (params.get("error") === "validation") {
+            erreur.textContent = "Vérifiez les informations saisies (mot de passe : 6 caractères minimum).";
+            erreur.style.display = "block";
+        }
+    </script>
+</body>
+</html>
