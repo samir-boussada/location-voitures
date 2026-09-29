@@ -70,7 +70,11 @@ public class testRemise {
         locationRepository.enregistrer(location);
 
         List<Location> locations = locationRepository.trouverToutes();
-        assertTrue(locations.stream().anyMatch(l -> l.getRemise() != null && new BigDecimal("50.00").compareTo(l.getRemise()) == 0));
+        assertTrue(locations.stream().anyMatch(l -> l.getVoitureId() != null
+                && l.getVoitureId().equals(location.getVoitureId())
+                && l.getClientId() != null
+                && l.getClientId().equals(location.getClientId())
+                && l.getRemise() != null && new BigDecimal("50.00").compareTo(l.getRemise()) == 0));
 
         Location retrouvee = locations.stream()
                 .filter(l -> l.getRemise() != null && new BigDecimal("50.00").compareTo(l.getRemise()) == 0)

@@ -88,6 +88,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Tests de sécurité (formLogin, logout, mock utilisateur) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Serveur Apache Tomcat externe -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

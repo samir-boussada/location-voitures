@@ -1,13 +1,15 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  jakarta.annotation.PostConstruct
- *  jakarta.faces.application.FacesMessage
- *  jakarta.faces.application.FacesMessage$Severity
- *  jakarta.faces.context.FacesContext
- *  jakarta.faces.view.ViewScoped
- *  org.springframework.stereotype.Component
+/**
+ * LocationView  Main view bean of the application.
+ *
+ * This JSF component handles all server-side business logic:
+ *   - Dashboard with statistics (cars, clients, revenue)
+ *   - Car CRUD with photo / engine / transmission and technical sheet
+ *   - Client CRUD (direct add / update)
+ *   - Rental creation with total price calculation and car status set to OCCUPE
+ *   - Combined filters on the car table (search, price, status)
+ *
+ * Annotated @ViewScoped to keep state while navigating
+ * between tabs of the same page.
  */
 package com.locationvoitures.vue;
 
@@ -21,49 +23,90 @@ import jakarta.annotation.PostConstruct;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
+import org.springframework.stereotype.Component;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
-import org.springframework.stereotype.Component;
 
-@Component(value="locationView")
+@Component("locationView")
 @ViewScoped
-public class LocationView
-implements Serializable {
+public class LocationView implements Serializable {
+
+    // =========================================================================
+    //  DEPENDENCIES (constructor injection)
+    // =========================================================================
+
     private final VoitureRepository voitureRepository;
     private final ClientRepository clientRepository;
     private final LocationRepository locationRepository;
+
+    // =========================================================================
+    //  DATA — Lists and form-bound objects
+    // =========================================================================
+
     private List<Voiture> voitures;
     private List<Client> clients;
     private List<Location> locations;
+
+    /** Status used to filter the car table (TOUTES = all) */
     private String statutFiltre = "TOUTES";
+
+    /** Max daily price to filter cars (null = no limit) */
     private BigDecimal prixMax;
+
+    /** Car object bound to the add/edit form */
     private Voiture voiture;
+
+    /** Car whose technical sheet is shown in the window */
     private Voiture ficheSelectionnee;
+
+    /** Client object bound to the add/edit form */
     private Client client;
+
+    /** Rental object being created */
     private Location location;
+
+    // =========================================================================
+    //  RENTAL FORM FIELDS
+    // =========================================================================
+
     private String recherche = "";
     private Integer voitureSelectionneeId;
-    private LocalDate dateDebut = LocalDate.now();
-    private LocalDate dateFin = LocalDate.now().plusDays(1L);
+private LocalDate dateDebut = LocalDate.now();
+
+    private LocalDate dateFin = LocalDate.now().plusDays(1);
+
     private String pointDepart;
+
     private String pointRetour;
-    private BigDecimal remise = BigDecimal.ZERO;
+
+    /** Photo picked on the computer, resized and base64-encoded by the browser */
     private String photoBase64;
+
+    /** Original filename of the chosen photo */
     private String photoNom;
+
+    /** Rental being edited in the dedicated window */
     private Location locationSelectionnee = new Location();
+
+    /** Values entered in the rental edit window */
     private Integer editVoitureId;
     private Integer editClientId;
+
+    // =========================================================================
+    //  DASHBOARD STATISTICS
+    // =========================================================================
+
     private int totalVoitures;
     private int nombreVoituresDisponibles;
     private int nombreVoituresOccupees;
@@ -72,232 +115,317 @@ implements Serializable {
     private int totalLocations;
     private BigDecimal chiffreAffaires = BigDecimal.ZERO;
 
-    public LocationView(VoitureRepository voitureRepository, ClientRepository clientRepository, LocationRepository locationRepository) {
+    // =========================================================================
+    //  CONSTRUCTOR
+    // =========================================================================
+
+    public LocationView(
+            VoitureRepository voitureRepository,
+            ClientRepository clientRepository,
+            LocationRepository locationRepository) {
         this.voitureRepository = voitureRepository;
         this.clientRepository = clientRepository;
         this.locationRepository = locationRepository;
     }
 
+    // =========================================================================
+    //  INITIALIZATION
+    // =========================================================================
+
     @PostConstruct
     public void initialiser() {
-        this.actualiser();
-        this.nouvelleVoiture();
-        this.nouveauClient();
-        this.location = new Location();
+        actualiser();
+        nouvelleVoiture();
+        nouveauClient();
+        location = new Location();
     }
 
+    // =========================================================================
+    //  METHODS — Dashboard, search and filters
+    // =========================================================================
+
+    /** Reloads all data and statistics from the database */
     public void actualiser() {
-        this.statutFiltre = "TOUTES";
-        this.prixMax = null;
-        this.appliquerFiltres();
-        this.clients = this.clientRepository.trouverTous();
-        this.locations = this.locationRepository.trouverToutes();
-        this.totalVoitures = this.voitureRepository.compter();
-        this.nombreVoituresDisponibles = this.voitureRepository.compterParStatut("DISPONIBLE");
-        this.nombreVoituresOccupees = this.voitureRepository.compterParStatut("OCCUPE");
-        this.nombreVoituresEnPanne = this.voitureRepository.compterParStatut("EN_PANNE");
-        this.totalClients = this.clientRepository.compter();
-        this.totalLocations = this.locationRepository.compter();
-        this.chiffreAffaires = this.locationRepository.chiffreAffaires();
+        statutFiltre = "TOUTES";
+        prixMax = null;
+        appliquerFiltres();
+        clients = clientRepository.trouverTous();
+        locations = locationRepository.trouverToutes();
+
+        totalVoitures = voitureRepository.compter();
+        nombreVoituresDisponibles = voitureRepository.compterParStatut("DISPONIBLE");
+        nombreVoituresOccupees = voitureRepository.compterParStatut("OCCUPE");
+        nombreVoituresEnPanne = voitureRepository.compterParStatut("EN_PANNE");
+        totalClients = clientRepository.compter();
+        totalLocations = locationRepository.compter();
+        chiffreAffaires = locationRepository.chiffreAffaires();
     }
 
+    /** Applies all filters (search + max price + status) to the table */
     public void appliquerFiltres() {
-        this.voitures = this.voitureRepository.trouverAvecFiltres(this.recherche, this.prixMax, this.statutFiltre);
+        voitures = voitureRepository.trouverAvecFiltres(recherche, prixMax, statutFiltre);
     }
 
+    /** Filters by search keyword (search bar) */
     public void rechercher() {
-        this.appliquerFiltres();
+        appliquerFiltres();
     }
 
+    /**
+     * Shows cars matching a status in the Cars tab.
+     * Called when clicking dashboard cards: resets the max
+     * price so ONLY cars of that status are shown.
+     *
+     * @param statut status to filter; null or TOUTES = all cars
+     */
     public void filtrerParStatut(String statut) {
-        this.statutFiltre = statut == null || statut.isBlank() ? "TOUTES" : statut;
-        this.prixMax = null;
-        this.appliquerFiltres();
+        statutFiltre = (statut == null || statut.isBlank()) ? "TOUTES" : statut;
+        prixMax = null;
+        appliquerFiltres();
     }
 
+    /** Simple navigation to the Clients tab (dashboard Clients card click) */
     public void voirClients() {
+        // Tab switch handled client-side (PF('onglets').select)
     }
 
+    /** Simple navigation to the Locations tab (Locations and Revenue cards) */
     public void voirLocations() {
+        // Tab switch handled client-side (PF('onglets').select)
     }
+
+    // =========================================================================
+    //  METHODS — Car CRUD
+    // =========================================================================
 
     public void nouvelleVoiture() {
-        this.voiture = new Voiture();
-        this.voiture.setStatut("DISPONIBLE");
-        this.voiture.setPrixJour(BigDecimal.ZERO);
+        voiture = new Voiture();
+        voiture.setStatut("DISPONIBLE");
+        voiture.setPrixJour(BigDecimal.ZERO);
     }
 
     public void modifierVoiture(Voiture voitureSelectionnee) {
-        this.voiture = voitureSelectionnee;
+        voiture = voitureSelectionnee;
     }
 
     public void sauvegarderVoiture() {
-        if (this.photoBase64 != null && !this.photoBase64.isBlank()) {
-            this.sauvegarderPhotoDepuisBase64();
+        if (photoBase64 != null && !photoBase64.isBlank()) {
+            sauvegarderPhotoDepuisBase64();
         }
-        if (this.voiture.getId() == null) {
-            this.voitureRepository.ajouter(this.voiture);
+        if (voiture.getId() == null) {
+            voitureRepository.ajouter(voiture);
         } else {
-            this.voitureRepository.modifier(this.voiture);
+            voitureRepository.modifier(voiture);
         }
-        this.photoBase64 = null;
-        this.photoNom = null;
-        this.actualiser();
-        this.nouvelleVoiture();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, "Voiture enregistr\u00e9e", this.voiture.getLibelle());
+        photoBase64 = null;
+        photoNom = null;
+        actualiser();
+        nouvelleVoiture();
+        ajouterMessage(FacesMessage.SEVERITY_INFO, "Voiture enregistrée", voiture.getLibelle());
     }
 
     public void supprimerVoiture(Integer id) {
-        this.voitureRepository.supprimer(id);
-        this.actualiser();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, "Voiture supprim\u00e9e", "");
+        voitureRepository.supprimer(id);
+        actualiser();
+        ajouterMessage(FacesMessage.SEVERITY_INFO, "Voiture supprimée", "");
     }
 
     public void voirFiche(Voiture voitureSelectionnee) {
-        this.ficheSelectionnee = voitureSelectionnee;
+        ficheSelectionnee = voitureSelectionnee;
     }
 
+    /**
+     * Saves the photo chosen on the computer. The browser sends a
+     * resized version (max side 1600px) encoded in base64, so the
+     * file is always small, whatever the original photo.
+     */
     private void sauvegarderPhotoDepuisBase64() {
         try {
-            String donnees = this.photoBase64.contains(",") ? this.photoBase64.substring(this.photoBase64.indexOf(44) + 1) : this.photoBase64;
+            String donnees = photoBase64.contains(",")
+                    ? photoBase64.substring(photoBase64.indexOf(',') + 1)
+                    : photoBase64;
             byte[] octets = Base64.getDecoder().decode(donnees.trim());
             if (octets.length == 0) {
                 return;
             }
             String nomUnique = UUID.randomUUID().toString().replace("-", "").substring(0, 12) + ".jpg";
-            Path dossier = Path.of(this.dossierImagesVoitures(), new String[0]);
-            Files.createDirectories(dossier, new FileAttribute[0]);
-            Files.write(dossier.resolve(nomUnique), octets, new OpenOption[0]);
-            this.voiture.setPhoto(nomUnique);
-        }
-        catch (IOException | IllegalArgumentException e) {
-            this.ajouterMessage(FacesMessage.SEVERITY_ERROR, "Impossible d'enregistrer la photo", "L'image choisie est illisible.");
+            Path dossier = Path.of(dossierImagesVoitures());
+            Files.createDirectories(dossier);
+            Files.write(dossier.resolve(nomUnique), octets);
+            voiture.setPhoto(nomUnique);
+        } catch (IllegalArgumentException | IOException e) {
+            ajouterMessage(FacesMessage.SEVERITY_ERROR,
+                    "Impossible d'enregistrer la photo", "L'image choisie est illisible.");
         }
     }
 
     private String dossierImagesVoitures() {
         String base = System.getProperty("catalina.home", System.getProperty("java.io.tmpdir"));
-        return base + File.separator + "webapps" + File.separator + "location-voitures" + File.separator + "images" + File.separator + "voitures";
+        return base + File.separator + "webapps"
+                + File.separator + "location-voitures"
+                + File.separator + "images"
+                + File.separator + "voitures";
     }
 
+    // =========================================================================
+    //  METHODS — Client CRUD (direct save, no verification)
+    // =========================================================================
+
     public void nouveauClient() {
-        this.client = new Client();
+        client = new Client();
     }
 
     public void modifierClient(Client clientSelectionne) {
-        this.client = clientSelectionne;
+        client = clientSelectionne;
     }
 
+    /**
+     * Saves (add or update) the client in one step.
+     */
     public void sauvegarderClient() {
-        boolean ajout;
-        if (this.client.getEmail() != null && this.client.getEmail().isBlank()) {
-            this.client.setEmail(null);
+        if (client.getEmail() != null && client.getEmail().isBlank()) {
+            client.setEmail(null);
         }
-        if (this.client.getNumeroPermis() != null && this.client.getNumeroPermis().isBlank()) {
-            this.client.setNumeroPermis(null);
+        if (client.getNumeroPermis() != null && client.getNumeroPermis().isBlank()) {
+            client.setNumeroPermis(null);
         }
-        String nom = this.client.getNomComplet();
-        boolean bl = ajout = this.client.getId() == null;
+        String nom = client.getNomComplet();
+        boolean ajout = client.getId() == null;
         if (ajout) {
-            this.clientRepository.ajouter(this.client);
+            clientRepository.ajouter(client);
         } else {
-            this.clientRepository.modifier(this.client);
+            clientRepository.modifier(client);
         }
-        this.actualiser();
-        this.nouveauClient();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, ajout ? "Client ajout\u00e9" : "Client modifi\u00e9", nom);
+        actualiser();
+        nouveauClient();
+        ajouterMessage(FacesMessage.SEVERITY_INFO,
+                ajout ? "Client ajouté" : "Client modifié", nom);
     }
 
     public void supprimerClient(Integer id) {
-        this.clientRepository.supprimer(id);
-        this.actualiser();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, "Client supprim\u00e9", "");
+        clientRepository.supprimer(id);
+        actualiser();
+        ajouterMessage(FacesMessage.SEVERITY_INFO, "Client supprimé", "");
     }
 
     private void ajouterMessage(FacesMessage.Severity severite, String resume, String detail) {
-        FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(severite, resume, detail));
+        FacesContext.getCurrentInstance().addMessage(null,
+                new FacesMessage(severite, resume, detail));
     }
 
+    // =========================================================================
+    //  METHODS — Rental logic
+    // =========================================================================
+
     public List<Voiture> getVoituresDisponibles() {
-        return this.voitureRepository.trouverToutes("").stream().filter(v -> "DISPONIBLE".equals(v.getStatut())).toList();
+        return voitureRepository.trouverToutes("").stream()
+                .filter(v -> "DISPONIBLE".equals(v.getStatut()))
+                .toList();
     }
 
     public int getNombreJours() {
-        if (this.dateDebut == null || this.dateFin == null || this.dateFin.isBefore(this.dateDebut)) {
+        if (dateDebut == null || dateFin == null || dateFin.isBefore(dateDebut)) {
             return 0;
         }
-        return (int)ChronoUnit.DAYS.between(this.dateDebut, this.dateFin) + 1;
+        return (int) ChronoUnit.DAYS.between(dateDebut, dateFin) + 1;
     }
 
     public BigDecimal getPrixTotal() {
-        if (this.voitureSelectionneeId == null || this.getNombreJours() == 0) {
+        if (voitureSelectionneeId == null || getNombreJours() == 0) {
             return BigDecimal.ZERO;
         }
-        return this.voitureRepository.trouverToutes("").stream().filter(v -> v.getId().equals(this.voitureSelectionneeId)).findFirst().map(v -> v.getPrixJour().multiply(BigDecimal.valueOf(this.getNombreJours()))).orElse(BigDecimal.ZERO);
+        return voitureRepository.trouverToutes("").stream()
+                .filter(v -> v.getId().equals(voitureSelectionneeId))
+                .findFirst()
+                .map(v -> v.getPrixJour().multiply(BigDecimal.valueOf(getNombreJours())))
+                .orElse(BigDecimal.ZERO);
     }
 
     public void confirmerLocation() {
-        if (this.voitureSelectionneeId == null || this.location.getClientId() == null) {
+        if (voitureSelectionneeId == null || location.getClientId() == null) {
             return;
         }
-        this.location.setVoitureId(this.voitureSelectionneeId);
-        this.location.setDateDebut(this.dateDebut);
-        this.location.setDateFin(this.dateFin);
-        this.location.setPointDepart(this.pointDepart);
-        this.location.setPointRetour(this.pointRetour);
-        this.location.setRemise(this.remise);
-        this.location.setNombreJours(this.getNombreJours());
-        this.location.setPrixTotal(this.getPrixTotal());
-        this.locationRepository.enregistrer(this.location);
-        this.location = new Location();
-        this.voitureSelectionneeId = null;
-        this.actualiser();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, "Location confirm\u00e9e", "La voiture est maintenant occup\u00e9e.");
+        location.setVoitureId(voitureSelectionneeId);
+        location.setDateDebut(dateDebut);
+        location.setDateFin(dateFin);
+        location.setPointDepart(pointDepart);
+        location.setPointRetour(pointRetour);
+        location.setNombreJours(getNombreJours());
+        location.setPrixTotal(getPrixTotal());
+
+        locationRepository.enregistrer(location);
+
+        location = new Location();
+        voitureSelectionneeId = null;
+        actualiser();
+        ajouterMessage(FacesMessage.SEVERITY_INFO, "Location confirmée",
+                "La voiture est maintenant occupée.");
     }
 
+    /** Places the selected rental into the edit form */
     public void modifierLocation(Location locationChoisie) {
-        this.locationSelectionnee = locationChoisie;
-        this.editVoitureId = locationChoisie.getVoitureId();
-        this.editClientId = locationChoisie.getClientId();
+        locationSelectionnee = locationChoisie;
+        editVoitureId = locationChoisie.getVoitureId();
+        editClientId = locationChoisie.getClientId();
     }
-    
+
+    /** Number of days recalculated for the rental being edited */
     public int getJoursModification() {
-        if (this.locationSelectionnee == null || this.locationSelectionnee.getDateDebut() == null || this.locationSelectionnee.getDateFin() == null || this.locationSelectionnee.getDateFin().isBefore(this.locationSelectionnee.getDateDebut())) {
+        if (locationSelectionnee == null || locationSelectionnee.getDateDebut() == null
+                || locationSelectionnee.getDateFin() == null
+                || locationSelectionnee.getDateFin().isBefore(locationSelectionnee.getDateDebut())) {
             return 0;
         }
-        return (int)ChronoUnit.DAYS.between(this.locationSelectionnee.getDateDebut(), this.locationSelectionnee.getDateFin()) + 1;
+        return (int) ChronoUnit.DAYS.between(
+                locationSelectionnee.getDateDebut(), locationSelectionnee.getDateFin()) + 1;
     }
 
+    /** Total price recalculated for the rental being edited */
     public BigDecimal getPrixTotalModification() {
-        if (this.editVoitureId == null || this.getJoursModification() == 0) {
+        if (editVoitureId == null || getJoursModification() == 0) {
             return BigDecimal.ZERO;
         }
-        return this.prixVoiture(this.editVoitureId).multiply(BigDecimal.valueOf(this.getJoursModification()));
+        return prixVoiture(editVoitureId).multiply(BigDecimal.valueOf(getJoursModification()));
     }
 
+    /** Saves the changes to an existing rental */
     public void sauvegarderLocationModifiee() {
-        if (this.locationSelectionnee == null || this.editVoitureId == null || this.editClientId == null) {
-            this.ajouterMessage(FacesMessage.SEVERITY_ERROR, "Champs incomplets", "Choisissez une voiture et un client.");
+        if (locationSelectionnee == null || editVoitureId == null || editClientId == null) {
+            ajouterMessage(FacesMessage.SEVERITY_ERROR,
+                    "Champs incomplets", "Choisissez une voiture et un client.");
             return;
         }
-        this.locationSelectionnee.setVoitureId(this.editVoitureId);
-        this.locationSelectionnee.setClientId(this.editClientId);
-        this.locationSelectionnee.setNombreJours(this.getJoursModification());
-        this.locationSelectionnee.setPrixTotal(this.prixVoiture(this.editVoitureId).multiply(BigDecimal.valueOf(this.getJoursModification())));
-        this.locationRepository.modifier(this.locationSelectionnee);
-        this.actualiser();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, "Location modifi\u00e9e", "");
+        locationSelectionnee.setVoitureId(editVoitureId);
+        locationSelectionnee.setClientId(editClientId);
+        locationSelectionnee.setNombreJours(getJoursModification());
+        locationSelectionnee.setPrixTotal(
+                prixVoiture(editVoitureId).multiply(BigDecimal.valueOf(getJoursModification())));
+
+        locationRepository.modifier(locationSelectionnee);
+        actualiser();
+        ajouterMessage(FacesMessage.SEVERITY_INFO, "Location modifiée", "");
     }
 
+    /** Deletes a rental and frees the car */
     public void supprimerLocation(Integer id) {
-        this.locationRepository.supprimer(id);
-        this.actualiser();
-        this.ajouterMessage(FacesMessage.SEVERITY_INFO, "Location supprim\u00e9e", "La voiture est de nouveau disponible.");
+        locationRepository.supprimer(id);
+        actualiser();
+        ajouterMessage(FacesMessage.SEVERITY_INFO, "Location supprimée",
+                "La voiture est de nouveau disponible.");
     }
 
+    /** Daily price of a car (or zero if not found) */
     private BigDecimal prixVoiture(Integer id) {
-        return this.voitureRepository.trouverAvecFiltres("", null, "TOUTES").stream().filter(v -> v.getId().equals(id)).findFirst().map(Voiture::getPrixJour).orElse(BigDecimal.ZERO);
+        return voitureRepository.trouverAvecFiltres("", null, "TOUTES").stream()
+                .filter(v -> v.getId().equals(id))
+                .findFirst()
+                .map(Voiture::getPrixJour)
+                .orElse(BigDecimal.ZERO);
     }
+
+    // =========================================================================
+    //  GETTERS / SETTERS
+    // =========================================================================
 
     public List<String> getStatuts() {
         return List.of("DISPONIBLE", "OCCUPE", "EN_PANNE", "MAINTENANCE");
@@ -307,193 +435,78 @@ implements Serializable {
         return List.of("Manuelle", "Automatique");
     }
 
-    public List<Voiture> getVoitures() {
-        return this.voitures;
-    }
+    public List<Voiture> getVoitures() { return voitures; }
+    public List<Client> getClients() { return clients; }
+    public List<Location> getLocations() { return locations; }
 
-    public List<Client> getClients() {
-        return this.clients;
-    }
-
-    public List<Location> getLocations() {
-        return this.locations;
-    }
-
-    public String getStatutFiltre() {
-        return this.statutFiltre;
-    }
-
+    public String getStatutFiltre() { return statutFiltre; }
     public void setStatutFiltre(String statutFiltre) {
         this.statutFiltre = statutFiltre;
     }
 
-    public BigDecimal getPrixMax() {
-        return this.prixMax;
-    }
+    public BigDecimal getPrixMax() { return prixMax; }
+    public void setPrixMax(BigDecimal prixMax) { this.prixMax = prixMax; }
 
-    public void setPrixMax(BigDecimal prixMax) {
-        this.prixMax = prixMax;
-    }
+    public Voiture getVoiture() { return voiture; }
+    public void setVoiture(Voiture voiture) { this.voiture = voiture; }
 
-    public Voiture getVoiture() {
-        return this.voiture;
-    }
+    public Voiture getFicheSelectionnee() { return ficheSelectionnee; }
 
-    public void setVoiture(Voiture voiture) {
-        this.voiture = voiture;
-    }
+    public Client getClient() { return client; }
+    public void setClient(Client client) { this.client = client; }
 
-    public Voiture getFicheSelectionnee() {
-        return this.ficheSelectionnee;
-    }
+    public Location getLocation() { return location; }
+    public void setLocation(Location location) { this.location = location; }
 
-    public Client getClient() {
-        return this.client;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
-    }
-
-    public Location getLocation() {
-        return this.location;
-    }
-
-    public void setLocation(Location location) {
-        this.location = location;
-    }
-
-    public Location getLocationSelectionnee() {
-        return this.locationSelectionnee;
-    }
-
+    public Location getLocationSelectionnee() { return locationSelectionnee; }
     public void setLocationSelectionnee(Location locationSelectionnee) {
         this.locationSelectionnee = locationSelectionnee;
     }
 
-    public Integer getEditVoitureId() {
-        return this.editVoitureId;
-    }
+    public Integer getEditVoitureId() { return editVoitureId; }
+    public void setEditVoitureId(Integer editVoitureId) { this.editVoitureId = editVoitureId; }
 
-    public void setEditVoitureId(Integer editVoitureId) {
-        this.editVoitureId = editVoitureId;
-    }
+    public Integer getEditClientId() { return editClientId; }
+    public void setEditClientId(Integer editClientId) { this.editClientId = editClientId; }
 
-    public Integer getEditClientId() {
-        return this.editClientId;
-    }
+    public String getRecherche() { return recherche; }
+    public void setRecherche(String recherche) { this.recherche = recherche; }
 
-    public void setEditClientId(Integer editClientId) {
-        this.editClientId = editClientId;
-    }
-
-    public String getRecherche() {
-        return this.recherche;
-    }
-
-    public void setRecherche(String recherche) {
-        this.recherche = recherche;
-    }
-
-    public Integer getVoitureSelectionneeId() {
-        return this.voitureSelectionneeId;
-    }
-
+    public Integer getVoitureSelectionneeId() { return voitureSelectionneeId; }
     public void setVoitureSelectionneeId(Integer voitureSelectionneeId) {
         this.voitureSelectionneeId = voitureSelectionneeId;
     }
 
     public List<Voiture> getVoituresPourEdit() {
-        return this.voitureRepository.trouverAvecFiltres("", null, "TOUTES").stream().filter(v -> "DISPONIBLE".equals(v.getStatut()) || v.getId().equals(this.editVoitureId)).toList();
+        return voitureRepository.trouverAvecFiltres("", null, "TOUTES").stream()
+                .filter(v -> "DISPONIBLE".equals(v.getStatut())
+                        || v.getId().equals(editVoitureId))
+                .toList();
     }
 
-    public LocalDate getDateDebut() {
-        return this.dateDebut;
-    }
+    public LocalDate getDateDebut() { return dateDebut; }
+    public void setDateDebut(LocalDate dateDebut) { this.dateDebut = dateDebut; }
 
-    public void setDateDebut(LocalDate dateDebut) {
-        this.dateDebut = dateDebut;
-    }
+    public LocalDate getDateFin() { return dateFin; }
+    public void setDateFin(LocalDate dateFin) { this.dateFin = dateFin; }
 
-    public LocalDate getDateFin() {
-        return this.dateFin;
-    }
+    public String getPointDepart() { return pointDepart; }
+    public void setPointDepart(String pointDepart) { this.pointDepart = pointDepart; }
 
-    public void setDateFin(LocalDate dateFin) {
-        this.dateFin = dateFin;
-    }
+    public String getPointRetour() { return pointRetour; }
+    public void setPointRetour(String pointRetour) { this.pointRetour = pointRetour; }
 
-    public String getPointDepart() {
-        return this.pointDepart;
-    }
+    public String getPhotoBase64() { return photoBase64; }
+    public void setPhotoBase64(String photoBase64) { this.photoBase64 = photoBase64; }
 
-    public void setPointDepart(String pointDepart) {
-        this.pointDepart = pointDepart;
-    }
+    public String getPhotoNom() { return photoNom; }
+    public void setPhotoNom(String photoNom) { this.photoNom = photoNom; }
 
-    public String getPointRetour() {
-        return this.pointRetour;
-    }
-
-    public void setPointRetour(String pointRetour) {
-        this.pointRetour = pointRetour;
-    }
-
-    public BigDecimal getRemise() {
-        return this.remise;
-    }
-
-    public void setRemise(BigDecimal remise) {
-        this.remise = remise != null ? remise : BigDecimal.ZERO;
-    }
-
-    public BigDecimal getTotalRevenue() {
-        BigDecimal base = this.getPrixTotal() != null ? this.getPrixTotal() : BigDecimal.ZERO;
-        BigDecimal remiseValue = this.remise != null ? this.remise : BigDecimal.ZERO;
-        return base.subtract(remiseValue);
-    }
-
-    public String getPhotoBase64() {
-        return this.photoBase64;
-    }
-
-    public void setPhotoBase64(String photoBase64) {
-        this.photoBase64 = photoBase64;
-    }
-
-    public String getPhotoNom() {
-        return this.photoNom;
-    }
-
-    public void setPhotoNom(String photoNom) {
-        this.photoNom = photoNom;
-    }
-
-    public int getTotalVoitures() {
-        return this.totalVoitures;
-    }
-
-    public int getNombreVoituresDisponibles() {
-        return this.nombreVoituresDisponibles;
-    }
-
-    public int getNombreVoituresOccupees() {
-        return this.nombreVoituresOccupees;
-    }
-
-    public int getNombreVoituresEnPanne() {
-        return this.nombreVoituresEnPanne;
-    }
-
-    public int getTotalClients() {
-        return this.totalClients;
-    }
-
-    public int getTotalLocations() {
-        return this.totalLocations;
-    }
-
-    public BigDecimal getChiffreAffaires() {
-        return this.chiffreAffaires;
-    }
+    public int getTotalVoitures() { return totalVoitures; }
+    public int getNombreVoituresDisponibles() { return nombreVoituresDisponibles; }
+    public int getNombreVoituresOccupees() { return nombreVoituresOccupees; }
+    public int getNombreVoituresEnPanne() { return nombreVoituresEnPanne; }
+    public int getTotalClients() { return totalClients; }
+    public int getTotalLocations() { return totalLocations; }
+    public BigDecimal getChiffreAffaires() { return chiffreAffaires; }
 }

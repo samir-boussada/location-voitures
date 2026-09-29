@@ -1,5 +1,7 @@
-/*
- * Decompiled with CFR 0.152.
+/**
+ * Model representing a rental operation.
+ * Links a car to a client for a specific period
+ * with automatic calculation of days and total price.
  */
 package com.locationvoitures.modele;
 
@@ -7,21 +9,45 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class Location {
+
+    /** Rental's unique identifier */
     private Integer id;
+
+    /** Rented car ID (foreign key to voitures) */
     private Integer voitureId;
+
+    /** Tenant client ID (foreign key to clients) */
     private Integer clientId;
+
+    /** Rental start date */
     private LocalDate dateDebut;
+
+    /** Rental end date */
     private LocalDate dateFin;
+
+    /** Vehicle handover location at rental start */
     private String pointDepart;
+
+    /** Vehicle return location at rental end */
     private String pointRetour;
-    private BigDecimal remise;
+
+    /** Total number of rental days */
     private Integer nombreJours;
+
+    /** Calculated total price (daily_price x days) in DZD */
     private BigDecimal prixTotal;
+
+    /** Discount applied to the total price in DZD */
+    private BigDecimal remise;
+
+    /** Car display label (brand model) - not persisted in DB */
     private String voitureLabel;
+
+    /** Client full name for display - not persisted in DB */
     private String clientLabel;
 
     public Integer getId() {
-        return this.id;
+        return id;
     }
 
     public void setId(Integer id) {
@@ -29,7 +55,7 @@ public class Location {
     }
 
     public Integer getVoitureId() {
-        return this.voitureId;
+        return voitureId;
     }
 
     public void setVoitureId(Integer voitureId) {
@@ -37,7 +63,7 @@ public class Location {
     }
 
     public Integer getClientId() {
-        return this.clientId;
+        return clientId;
     }
 
     public void setClientId(Integer clientId) {
@@ -45,7 +71,7 @@ public class Location {
     }
 
     public LocalDate getDateDebut() {
-        return this.dateDebut;
+        return dateDebut;
     }
 
     public void setDateDebut(LocalDate dateDebut) {
@@ -53,7 +79,7 @@ public class Location {
     }
 
     public LocalDate getDateFin() {
-        return this.dateFin;
+        return dateFin;
     }
 
     public void setDateFin(LocalDate dateFin) {
@@ -61,7 +87,7 @@ public class Location {
     }
 
     public String getPointDepart() {
-        return this.pointDepart;
+        return pointDepart;
     }
 
     public void setPointDepart(String pointDepart) {
@@ -69,29 +95,15 @@ public class Location {
     }
 
     public String getPointRetour() {
-        return this.pointRetour;
+        return pointRetour;
     }
 
     public void setPointRetour(String pointRetour) {
         this.pointRetour = pointRetour;
     }
 
-    public BigDecimal getRemise() {
-        return this.remise;
-    }
-
-    public void setRemise(BigDecimal remise) {
-        this.remise = remise;
-    }
-
-    public BigDecimal getTotalRevenue() {
-        BigDecimal base = this.prixTotal != null ? this.prixTotal : BigDecimal.ZERO;
-        BigDecimal remiseValue = this.remise != null ? this.remise : BigDecimal.ZERO;
-        return base.subtract(remiseValue);
-    }
-
     public Integer getNombreJours() {
-        return this.nombreJours;
+        return nombreJours;
     }
 
     public void setNombreJours(Integer nombreJours) {
@@ -99,15 +111,29 @@ public class Location {
     }
 
     public BigDecimal getPrixTotal() {
-        return this.prixTotal;
+        return prixTotal;
     }
 
     public void setPrixTotal(BigDecimal prixTotal) {
         this.prixTotal = prixTotal;
     }
 
+    public BigDecimal getRemise() {
+        return remise;
+    }
+
+    public void setRemise(BigDecimal remise) {
+        this.remise = remise;
+    }
+
+    public BigDecimal getTotalRevenue() {
+        BigDecimal base = prixTotal != null ? prixTotal : BigDecimal.ZERO;
+        BigDecimal remiseValue = remise != null ? remise : BigDecimal.ZERO;
+        return base.subtract(remiseValue);
+    }
+
     public String getVoitureLabel() {
-        return this.voitureLabel;
+        return voitureLabel;
     }
 
     public void setVoitureLabel(String voitureLabel) {
@@ -115,7 +141,7 @@ public class Location {
     }
 
     public String getClientLabel() {
-        return this.clientLabel;
+        return clientLabel;
     }
 
     public void setClientLabel(String clientLabel) {

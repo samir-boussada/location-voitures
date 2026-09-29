@@ -5,3 +5,8 @@ target/
 .idea/
 *.iml
 .vscode/
+
+# Playwright (e2e-tests)
+e2e-tests/node_modules/
+e2e-tests/test-results/
+e2e-tests/playwright-report/
