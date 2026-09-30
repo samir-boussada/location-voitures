@@ -90,6 +90,9 @@ private LocalDate dateDebut = LocalDate.now();
 
     private String pointRetour;
 
+    /** Discount (DZD) applied on the rental being created */
+    private BigDecimal remise = BigDecimal.ZERO;
+
     /** Photo picked on the computer, resized and base64-encoded by the browser */
     private String photoBase64;
 
@@ -341,6 +344,20 @@ private LocalDate dateDebut = LocalDate.now();
                 .orElse(BigDecimal.ZERO);
     }
 
+    public BigDecimal getRemise() {
+        return remise;
+    }
+
+    public void setRemise(BigDecimal remise) {
+        this.remise = remise != null ? remise : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getTotalRevenue() {
+        BigDecimal base = getPrixTotal() != null ? getPrixTotal() : BigDecimal.ZERO;
+        BigDecimal remiseValue = remise != null ? remise : BigDecimal.ZERO;
+        return base.subtract(remiseValue);
+    }
+
     public void confirmerLocation() {
         if (voitureSelectionneeId == null || location.getClientId() == null) {
             return;
@@ -352,6 +369,7 @@ private LocalDate dateDebut = LocalDate.now();
         location.setPointRetour(pointRetour);
         location.setNombreJours(getNombreJours());
         location.setPrixTotal(getPrixTotal());
+        location.setRemise(remise);
 
         locationRepository.enregistrer(location);
 
