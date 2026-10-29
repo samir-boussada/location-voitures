@@ -1,4 +1,4 @@
-# 🚗 Location de Voitures — Car Rental & Fleet Management Platform
+#  Location de Voitures — Car Rental & Fleet Management Platform
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.5-brightgreen?logo=springboot)
@@ -13,7 +13,7 @@ This platform provides end-to-end management of vehicle inventory, customer prof
 
 ---
 
-## 🏗️ Technologies Used
+## Technologies Used
 
 ### Backend & Core Framework
 * **Java 21 (LTS):** Modern object-oriented backend logic.
@@ -35,7 +35,7 @@ This platform provides end-to-end management of vehicle inventory, customer prof
 
 ---
 
-## 🌟 Key Features Implemented
+##  Key Features Implemented
 
 ### 1. 🔐 Authentication & Role-Based Security
 * **User Registration & Login:** Custom Spring Security authentication with BCrypt password hashing.
@@ -51,7 +51,7 @@ This platform provides end-to-end management of vehicle inventory, customer prof
   * `MAINTENANCE` (In Service)
 * **Photo Uploads & Visual Badges:** Upload and display vehicle imagery.
 
-### 3. 👥 Customer Management (`Clients`)
+### 3.  Customer Management (`Clients`)
 * Customer records capturing Full Name, Email, Phone Number, and unique Driving License Number (`numero_permis`).
 * Email and driver's license uniqueness validation.
 
@@ -69,7 +69,7 @@ This platform provides end-to-end management of vehicle inventory, customer prof
 
 ---
 
-## 🗄️ Database Architecture & Schema
+##  Database Architecture & Schema
 
 The application uses a normalized MySQL database structure:
 
@@ -156,7 +156,7 @@ location-voitures/
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 * **Java Development Kit (JDK 21+)** installed.
