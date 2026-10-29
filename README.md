@@ -37,7 +37,7 @@ This platform provides end-to-end management of vehicle inventory, customer prof
 
 ##  Key Features Implemented
 
-### 1. 🔐 Authentication & Role-Based Security
+### 1. Authentication & Role-Based Security
 * **User Registration & Login:** Custom Spring Security authentication with BCrypt password hashing.
 * **Automatic Admin Bootstrap:** Automatically seeds an administrator account upon startup via `InitialiserAdmin.java`.
 * **Session Protection:** Route protection ensuring dashboard access requires valid authentication.
@@ -55,12 +55,12 @@ This platform provides end-to-end management of vehicle inventory, customer prof
 * Customer records capturing Full Name, Email, Phone Number, and unique Driving License Number (`numero_permis`).
 * Email and driver's license uniqueness validation.
 
-### 4. 📅 Rental & Booking Engine (`Locations`)
+### 4.  Rental & Booking Engine (`Locations`)
 * **Duration & Rate Calculation:** Automatically computes total days (`nombre_jours`) and total price (`prix_total = (prix_jour * jours) - remise`).
 * **Pickup & Return Logistics:** Specify departure and return locations (`point_depart`, `point_retour`).
 * **Discount Handling:** Ability to apply promotional discounts (`remise`).
 
-### 5. 🧪 Automated E2E Testing with Playwright
+### 5. Automated E2E Testing with Playwright
 * Complete test suite under [`e2e-tests/tests/app.spec.js`](e2e-tests/tests/app.spec.js).
 * Automates:
   * Login page rendering and title validation.
@@ -123,7 +123,7 @@ erDiagram
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 location-voitures/
